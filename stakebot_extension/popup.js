@@ -20,12 +20,14 @@ function updateStatus() {
                 // Content script not available
                 document.getElementById('botStatus').innerText = 'Stopped';
                 document.getElementById('betsMade').innerText = '0';
+                document.getElementById('profitTimes').innerText = '0';
                 document.getElementById('runningTime').innerText = '00:00:00';
                 return;
             }
             if (response) {
                 document.getElementById('botStatus').innerText = response.isRunning ? 'Running' : 'Stopped';
                 document.getElementById('betsMade').innerText = response.betsMade;
+                document.getElementById('profitTimes').innerText = response.profitTimes;
                 document.getElementById('runningTime').innerText = formatTime(response.runningTime);
             }
         });
@@ -39,16 +41,19 @@ document.getElementById('startBot').addEventListener('click', () => {
 
     if (isNaN(betSizeInput) || betSizeInput < 0.01) {
         document.getElementById('message').innerText = 'Invalid bet size.';
+        document.getElementById('message').style.color = 'red';
         return;
     }
 
     if (isNaN(multipliersCountInput) || multipliersCountInput < 1 || multipliersCountInput > 5) {
         document.getElementById('message').innerText = 'Multipliers to check must be between 1 and 5.';
+        document.getElementById('message').style.color = 'red';
         return;
     }
 
     // Clear any previous messages
     document.getElementById('message').innerText = '';
+    document.getElementById('message').style.color = 'green';
 
     // Save settings to Chrome storage
     chrome.storage.local.set({ betSize: betSizeInput, multipliersCount: multipliersCountInput }, () => {
@@ -56,14 +61,20 @@ document.getElementById('startBot').addEventListener('click', () => {
         
         // Send startBot message with settings to content script
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-            if (tabs.length === 0) return;
+            if (tabs.length === 0) {
+                document.getElementById('message').innerText = 'No active tab found.';
+                document.getElementById('message').style.color = 'red';
+                return;
+            }
             chrome.tabs.sendMessage(tabs[0].id, { action: "startBot", betSize: betSizeInput, multipliersCount: multipliersCountInput }, (response) => {
                 if (chrome.runtime.lastError) {
                     document.getElementById('message').innerText = 'Bot could not be started. Ensure you are on the game page.';
+                    document.getElementById('message').style.color = 'red';
                     return;
                 }
                 if (response && response.status) {
                     document.getElementById('message').innerText = response.status;
+                    document.getElementById('message').style.color = 'green';
                 }
             });
         });
@@ -79,14 +90,20 @@ document.getElementById('startBot').addEventListener('click', () => {
 document.getElementById('stopBot').addEventListener('click', () => {
     // Send stopBot message to content script
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs.length === 0) return;
+        if (tabs.length === 0) {
+            document.getElementById('message').innerText = 'No active tab found.';
+            document.getElementById('message').style.color = 'red';
+            return;
+        }
         chrome.tabs.sendMessage(tabs[0].id, { action: "stopBot" }, (response) => {
             if (chrome.runtime.lastError) {
                 document.getElementById('message').innerText = 'Bot could not be stopped. Ensure you are on the game page.';
+                document.getElementById('message').style.color = 'red';
                 return;
             }
             if (response && response.status) {
                 document.getElementById('message').innerText = response.status;
+                document.getElementById('message').style.color = 'green';
             }
         });
     });
@@ -100,6 +117,7 @@ document.getElementById('stopBot').addEventListener('click', () => {
     // Reset status display
     document.getElementById('botStatus').innerText = 'Stopped';
     document.getElementById('betsMade').innerText = '0';
+    document.getElementById('profitTimes').innerText = '0';
     document.getElementById('runningTime').innerText = '00:00:00';
     document.getElementById('message').innerText = '';
 });

@@ -29,6 +29,7 @@ let multipliersToCheck = 4; // Default value, can be updated via settings
 let lastMultipliers = [];
 let sPressCount = 0;
 let betsMade = 0;
+let profitTimes = 0;
 let startTime = null;
 let botInterval = null;
 let networkInterval = null;
@@ -89,11 +90,11 @@ function setBetSize(betSize) {
     }
 }
 
-// Function to compare two arrays for equality (with optional epsilon for float comparison)
-function arraysEqual(a, b, epsilon = 0.0001) {
+// Function to compare two arrays for equality
+function arraysEqual(a, b) {
     if (a.length !== b.length) return false;
     for(let i = 0; i < a.length; i++) {
-        if(Math.abs(a[i] - b[i]) > epsilon) return false;
+        if(a[i] !== b[i]) return false;
     }
     return true;
 }
@@ -119,14 +120,11 @@ function performAction() {
             }
         });
 
-        // Extract the first N multipliers based on user input
-        const currentMultipliersToCheck = currentMultipliers.slice(0, multipliersToCheck);
-
-        // Check if the first N multipliers have changed since the last check
-        const multipliersChanged = !arraysEqual(currentMultipliersToCheck, lastMultipliers);
+        // Check if multipliers have changed
+        const multipliersChanged = !arraysEqual(currentMultipliers, lastMultipliers);
         if (multipliersChanged) {
             lastMultiplierChangeTime = Date.now();
-            lastMultipliers = [...currentMultipliersToCheck];
+            lastMultipliers = [...currentMultipliers];
             console.log(`Multipliers updated: ${currentMultipliers}`);
             sendNotification('Multiplier Changed', `New multipliers: ${currentMultipliers.join(', ')}x`);
         } else {
@@ -159,15 +157,17 @@ function performAction() {
                 clickButton(ACTION_BUTTONS.s);
                 sPressCount += 1;
                 betsMade += 1;
-                console.log(`Pressed 'space' and 's'. Total 's' presses: ${sPressCount}, Bets Made: ${betsMade}`);
+                profitTimes += 1; // Increment profitTimes when sPressCount > 0
+                console.log(`Pressed 'space' and 's'. Total 's' presses: ${sPressCount}, Bets Made: ${betsMade}, Profit Times: ${profitTimes}`);
                 updateStatus();
             } else {
                 if (sPressCount > 0) {
                     // Press 'a' sPressCount times
                     for (let i = 0; i < sPressCount; i++) {
                         clickButton(ACTION_BUTTONS.a);
+                        betsMade += 1;
                     }
-                    console.log(`Pressed 'a' ${sPressCount} time(s).`);
+                    console.log(`Pressed 'a' ${sPressCount} time(s). Bets Made: ${betsMade}`);
                     sPressCount = 0; // Reset the counter
                     updateStatus();
                 }
@@ -206,6 +206,7 @@ function startBot(betSize, multipliersCount) {
         isRunning = true;
         startTime = Date.now();
         betsMade = 0;
+        profitTimes = 0; // Initialize profitTimes
         sPressCount = 0;
 
         botInterval = setInterval(performAction, 10000); // 10 seconds
@@ -275,6 +276,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         sendResponse({
             isRunning: isRunning,
             betsMade: betsMade,
+            profitTimes: profitTimes,
             runningTime: getRunningTime()
         });
     }
