@@ -11,7 +11,7 @@ const MULTIPLIER_XPATHS = [
     '//*[@id="main-content"]/div/div[1]/div[2]/div[2]/div/div/button[5]'  // Multiplier 5
 ];
 
-// XPaths for the blue countdown bar
+// XPath for the blue countdown bar
 const BLUE_BAR_XPATH = '//*[@id="main-content"]/div/div[1]/div[2]/div[4]/div';
 
 // XPaths for action buttons
@@ -21,21 +21,22 @@ const ACTION_BUTTONS = {
     a: '//*[@id="main-content"]/div/div[1]/div[1]/label[1]/div/div[2]/button[1]'  // 'a' key
 };
 
+// XPath for bet size input
+const BET_SIZE_XPATH = '//*[@id="main-content"]/div/div[1]/div[1]/label[1]/div/div[1]/input';
+
 // Initialize state variables
-let lastMultipliers = [];
+let lastFourMultipliers = [];
 let sPressCount = 0;
+let previousMultiplierSet = [];
 let botInterval = null;
+let networkInterval = null;
+let lastMultiplierChangeTime = Date.now();
+let startTime = null;
+let betsMade = 0;
+let multipliersToCheck = 4;
 
-// User-configurable settings
-let betSize = 0.01;
-let requiredMultipliers = 4;
-
-// Initialize timer variables for network issues
-let lastChangeTime = null;
-const NETWORK_THRESHOLD = 60000; // 30 seconds
-
-// Initialize bet count
-let betCount = 0;
+const CHECK_INTERVAL = 10000; // Check every 10 second
+const NETWORK_TIMEOUT = 60000; // 60 seconds
 
 // ------------------- Helper Functions -------------------
 
@@ -70,16 +71,24 @@ function isBlueBarPresent() {
 function clickButton(xpath) {
     const button = getElementByXpath(xpath);
     if (button) {
-        // Create and dispatch a MouseEvent to ensure the game registers the click
-        const event = new MouseEvent('click', {
-            view: window,
-            bubbles: true,
-            cancelable: true
-        });
-        button.dispatchEvent(event);
+        button.click();
         console.log(`Clicked button with XPath: ${xpath}`);
     } else {
-        console.error(`Button not found for XPath: ${xpath}`);
+        console.log(`Button not found for XPath: ${xpath}`);
+    }
+}
+
+// Function to input bet size
+function setBetSize(betSize) {
+    const inputField = getElementByXpath(BET_SIZE_XPATH);
+    if (inputField) {
+        inputField.value = betSize;
+        // Dispatch input events to ensure the webpage registers the change
+        inputField.dispatchEvent(new Event('input', { bubbles: true }));
+        inputField.dispatchEvent(new Event('change', { bubbles: true }));
+        console.log(`Bet size set to ${betSize}`);
+    } else {
+        console.log(`Bet size input field not found at XPath: ${BET_SIZE_XPATH}`);
     }
 }
 
@@ -94,136 +103,110 @@ function arraysEqual(a, b) {
 
 // Function to perform the main logic
 function performAction() {
-    let currentMultipliers = [];
+    try {
+        let currentMultipliers = [];
 
-    // Read multipliers 1 to 5
-    MULTIPLIER_XPATHS.forEach((xpath, index) => {
-        const element = getElementByXpath(xpath);
-        if (element) {
-            const multiplier = readMultiplier(element);
-            if (multiplier !== null) {
-                currentMultipliers.push(multiplier);
-                console.log(`Multiplier ${index + 1}: ${multiplier}x`);
+        // Read multipliers 1 to 5
+        MULTIPLIER_XPATHS.forEach((xpath, index) => {
+            const element = getElementByXpath(xpath);
+            if (element) {
+                const multiplier = readMultiplier(element);
+                if (multiplier !== null) {
+                    currentMultipliers.push(multiplier);
+                    console.log(`Multiplier ${index + 1}: ${multiplier}x`);
+                } else {
+                    console.log(`Multiplier ${index + 1}: Failed to read.`);
+                }
             } else {
-                console.log(`Multiplier ${index + 1}: Failed to read.`);
+                console.log(`Multiplier ${index + 1}: Element not found.`);
             }
-        } else {
-            console.log(`Multiplier ${index + 1}: Element not found.`);
+        });
+
+        // Check if multipliers have changed
+        const multipliersChanged = !arraysEqual(currentMultipliers, previousMultiplierSet);
+        if (multipliersChanged) {
+            lastMultiplierChangeTime = Date.now();
+            previousMultiplierSet = [...currentMultipliers];
+            console.log(`Multipliers updated: ${currentMultipliers}`);
+            sendNotification('Multiplier Changed', `New multipliers: ${currentMultipliers.join(', ')}x`);
         }
-    });
 
-    // Ensure we have enough multipliers
-    if (currentMultipliers.length < requiredMultipliers) {
-        sendStatusUpdate("Not enough multipliers read. Skipping this iteration.");
-        return; // Skip iteration if not enough multipliers
-    }
+        // Ensure we have enough multipliers to check
+        if (currentMultipliers.length < multipliersToCheck) {
+            console.log("Not enough multipliers read. Skipping this iteration.");
+            return;
+        }
 
-    // Select the last 'requiredMultipliers' multipliers
-    const selectedMultipliers = currentMultipliers.slice(-requiredMultipliers);
+        // Update lastFourMultipliers based on multipliersToCheck
+        lastFourMultipliers = currentMultipliers.slice(0, multipliersToCheck);
+        console.log(`Checking first ${multipliersToCheck} multipliers: ${lastFourMultipliers}`);
 
-    // Check for duplicate multiplier sets
-    if (arraysEqual(selectedMultipliers, lastMultipliers)) {
-        // No change, update network timer
-        sendStatusUpdate("Multipliers unchanged.");
-        return;
-    } else {
-        lastMultipliers = [...selectedMultipliers];
-        lastChangeTime = Date.now(); // Update the last change time
-        console.log(`Multiplier set changed: ${selectedMultipliers}`);
-    }
+        // Check if all specified multipliers are below 2x
+        const allBelow2 = lastFourMultipliers.every(m => m < 2);
 
-    // Update lastMultipliers
-    // Check if all selected multipliers are below 2x
-    const allBelow2 = selectedMultipliers.every(m => m < 2);
+        // Check if blue bar is present
+        const blueBarPresent = isBlueBarPresent();
+        console.log(`Blue bar present: ${blueBarPresent}`);
 
-    // Check if blue bar is present
-    const blueBarPresent = isBlueBarPresent();
-    console.log(`Blue bar present: ${blueBarPresent}`);
-
-    if (blueBarPresent) {
-        if (allBelow2) {
-            // Press 'space' and 's' based on bet size
-            for (let i = 0; i < betSize; i++) {
+        if (blueBarPresent) {
+            if (allBelow2) {
+                // Press 'space' and 's'
                 clickButton(ACTION_BUTTONS.space);
                 clickButton(ACTION_BUTTONS.s);
                 sPressCount += 1;
-                betCount += 1; // Increment bet count
-            }
-            console.log(`Pressed 'space' and 's' for bet size: ${betSize}. Total 's' presses: ${sPressCount}`);
-        } else {
-            if (sPressCount > 0) {
-                // Press 'a' the same number of times as 's' was pressed
-                for (let i = 0; i < sPressCount; i++) {
-                    clickButton(ACTION_BUTTONS.a);
+                betsMade += 1;
+                console.log(`Pressed 'space' and 's'. Total 's' presses: ${sPressCount}`);
+                updateStatus();
+            } else {
+                if (sPressCount > 0) {
+                    // Press 'a' sPressCount times
+                    for (let i = 0; i < sPressCount; i++) {
+                        clickButton(ACTION_BUTTONS.a);
+                        betsMade += 1;
+                    }
+                    console.log(`Pressed 'a' ${sPressCount} time(s).`);
+                    sPressCount = 0; // Reset the counter
+                    updateStatus();
                 }
-                console.log(`Pressed 'a' ${sPressCount} time(s).`);
-                sPressCount = 0; // Reset the counter
             }
+        } else {
+            console.log("Blue bar not present. Waiting for countdown.");
         }
-    } else {
-        console.log("Blue bar not present. Waiting for countdown.");
-    }
 
-    // Send status update
-    sendStatusUpdate("Bot is running.");
-    console.log("--------------------------------------------------");
+        console.log("--------------------------------------------------");
+    } catch (error) {
+        console.error("Error in performAction:", error);
+    }
 }
 
-// Function to handle network issues by checking multiplier changes
-function handleNetworkIssues() {
-    if (!lastChangeTime) return; // If the bot hasn't started, do nothing
-
+// Function to check for network issues
+function checkNetworkIssues() {
     const currentTime = Date.now();
-    const elapsed = currentTime - lastChangeTime;
-
-    if (elapsed > NETWORK_THRESHOLD) {
-        console.log("No multiplier change detected for 30 seconds. Reloading page...");
-        window.location.reload();
+    if (currentTime - lastMultiplierChangeTime > NETWORK_TIMEOUT) {
+        console.log("No multiplier change detected for 60 seconds. Reloading the page.");
+        sendNotification('Network Issue', 'Reloading the page due to no multiplier changes.');
+        location.reload();
     }
 }
 
-// Function to send status updates to the popup
-function sendStatusUpdate(status) {
-    let elapsedTime = '0s';
-    if (startTime) {
-        const elapsed = Math.floor((Date.now() - startTime) / 1000);
-        elapsedTime = `${elapsed}s`;
-    }
-
-    chrome.runtime.sendMessage({
-        type: "updateStatus",
-        status: status,
-        bets: betCount,
-        time: elapsedTime
-    });
+// Function to send notifications
+function sendNotification(title, message) {
+    chrome.runtime.sendMessage({ type: 'notify', title: title, message: message });
 }
-
-// ------------------- Control Functions -------------------
 
 // Function to start the bot
-function startBot(userBetSize, userRequiredMultipliers) {
+function startBot(betSize, multipliersCount) {
     if (!botInterval) {
-        betSize = parseFloat(userBetSize) || 0.01;
-        requiredMultipliers = parseInt(userRequiredMultipliers) || 4;
-
-        // Set the bet size on the webpage
-        const betInput = getElementByXpath('//*[@id="main-content"]/div/div[1]/div[1]/label[1]/div/div[1]/input');
-        if (betInput) {
-            betInput.value = betSize;
-            // Trigger input event to ensure the webpage registers the change
-            const event = new Event('input', { bubbles: true });
-            betInput.dispatchEvent(event);
-            console.log(`Bet size set to: ${betSize}`);
-        } else {
-            console.error("Bet size input element not found.");
-        }
-
-        botInterval = setInterval(() => {
-            performAction();
-            handleNetworkIssues();
-        }, 1000); // 1 second interval
+        setBetSize(betSize);
+        multipliersToCheck = multipliersCount;
+        botInterval = setInterval(performAction, CHECK_INTERVAL);
+        networkInterval = setInterval(checkNetworkIssues, 10000); // Check every 10 seconds
+        startTime = Date.now();
+        betsMade = 0;
+        sPressCount = 0;
         console.log("Bot started.");
-        sendStatusUpdate("Bot started.");
+        updateStatus();
+        sendNotification('Bot Started', 'The game bot has been activated.');
     } else {
         console.log("Bot is already running.");
     }
@@ -233,29 +216,56 @@ function startBot(userBetSize, userRequiredMultipliers) {
 function stopBot() {
     if (botInterval) {
         clearInterval(botInterval);
+        clearInterval(networkInterval);
         botInterval = null;
+        networkInterval = null;
         sPressCount = 0; // Reset counter
-        lastMultipliers = [];
-        betCount = 0; // Reset bet count
-        lastChangeTime = null; // Reset network timer
         console.log("Bot stopped.");
-        sendStatusUpdate("Bot stopped.");
+        sendNotification('Bot Stopped', 'The game bot has been deactivated.');
+        updateStatus();
     } else {
         console.log("Bot is not running.");
     }
+}
+
+// Function to get running time in milliseconds
+function getRunningTime() {
+    if (!startTime) return 0;
+    return Date.now() - startTime;
+}
+
+// Function to update status
+function updateStatus() {
+    chrome.runtime.sendMessage({
+        type: 'updateStatus',
+        status: {
+            isRunning: !!botInterval,
+            betsMade: betsMade,
+            runningTime: getRunningTime()
+        }
+    });
 }
 
 // ------------------- Message Listener -------------------
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.action === "startBot") {
-        const userBetSize = request.betSize || 0.01;
-        const userRequiredMultipliers = request.requiredMultipliers || 4;
-        startBot(userBetSize, userRequiredMultipliers);
-        sendResponse({status: `Bot started with bet size: ${betSize} and required multipliers: ${requiredMultipliers}`});
+        startBot(request.betSize, request.multipliersCount);
+        sendResponse({ status: "Bot started." });
     }
     if (request.action === "stopBot") {
         stopBot();
-        sendResponse({status: "Bot stopped."});
+        sendResponse({ status: "Bot stopped." });
+    }
+    if (request.action === "setBetSize") {
+        setBetSize(request.betSize);
+        sendResponse({ status: `Bet size set to ${request.betSize}` });
+    }
+    if (request.action === "getStatus") {
+        sendResponse({
+            isRunning: !!botInterval,
+            betsMade: betsMade,
+            runningTime: getRunningTime()
+        });
     }
 });

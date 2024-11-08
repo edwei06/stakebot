@@ -1,59 +1,104 @@
 // popup.js
 
-let betCount = 0;
-let timerInterval = null;
-let startTime = null;
+let statusInterval = null;
 
-// Update the popup with status, bets, and timer
-function updatePopup(status, bets, time) {
-    document.getElementById('status').innerText = status;
-    document.getElementById('bets').innerText = `Total Bets: ${bets}`;
-    document.getElementById('timer').innerText = `Elapsed Time: ${time}`;
+// Function to format time in HH:MM:SS
+function formatTime(milliseconds) {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const hours = String(Math.floor(totalSeconds / 3600)).padStart(2, '0');
+    const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
+    const seconds = String(totalSeconds % 60).padStart(2, '0');
+    return `${hours}:${minutes}:${seconds}`;
 }
 
-// Listen for messages from the content script
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.type === "updateStatus") {
-        updatePopup(request.status, request.bets, request.time);
-    }
-});
+// Function to update status display
+function updateStatus() {
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs.length === 0) return;
+        chrome.tabs.sendMessage(tabs[0].id, { action: "getStatus" }, (response) => {
+            if (chrome.runtime.lastError) {
+                // Content script not available
+                document.getElementById('botStatus').innerText = 'Stopped';
+                document.getElementById('betsMade').innerText = '0';
+                document.getElementById('runningTime').innerText = '00:00:00';
+                return;
+            }
+            if (response) {
+                document.getElementById('botStatus').innerText = response.isRunning ? 'Running' : 'Stopped';
+                document.getElementById('betsMade').innerText = response.betsMade;
+                document.getElementById('runningTime').innerText = formatTime(response.runningTime);
+            }
+        });
+    });
+}
 
-// Start Bot Button
+// Function to handle start button click
 document.getElementById('startBot').addEventListener('click', () => {
-    const betSize = parseFloat(document.getElementById('betSize').value) || 0.01;
-    const requiredMultipliers = parseInt(document.getElementById('requiredMultipliers').value) || 4;
+    const betSizeInput = parseFloat(document.getElementById('betSize').value);
+    const multipliersCountInput = parseInt(document.getElementById('multipliersCount').value, 10);
 
-    // Validate inputs
-    if (betSize < 0.01) {
-        alert("Bet size must be at least 0.01");
-        return;
-    }
-    if (requiredMultipliers < 1 || requiredMultipliers > 5) {
-        alert("Required multipliers must be between 1 and 5");
+    if (isNaN(betSizeInput) || betSizeInput < 0.01) {
+        document.getElementById('message').innerText = 'Invalid bet size.';
         return;
     }
 
-    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-        chrome.tabs.sendMessage(tabs[0].id, {action: "startBot", betSize: betSize, requiredMultipliers: requiredMultipliers}, (response) => {
-            updatePopup(response.status, betCount, "0s");
-            startTime = Date.now();
-            if (timerInterval) clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-                const elapsed = Math.floor((Date.now() - startTime) / 1000);
-                document.getElementById('timer').innerText = `Elapsed Time: ${elapsed}s`;
-            }, 1000);
+    if (isNaN(multipliersCountInput) || multipliersCountInput < 1 || multipliersCountInput > 5) {
+        document.getElementById('message').innerText = 'Multipliers to check must be between 1 and 5.';
+        return;
+    }
+
+    // Clear any previous messages
+    document.getElementById('message').innerText = '';
+
+    // Save settings to Chrome storage
+    chrome.storage.local.set({ betSize: betSizeInput, multipliersCount: multipliersCountInput }, () => {
+        console.log(`Settings saved: Bet Size = ${betSizeInput}, Multipliers to Check = ${multipliersCountInput}`);
+        
+        // Send startBot message with settings to content script
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs.length === 0) return;
+            chrome.tabs.sendMessage(tabs[0].id, { action: "startBot", betSize: betSizeInput, multipliersCount: multipliersCountInput }, (response) => {
+                if (chrome.runtime.lastError) {
+                    document.getElementById('message').innerText = 'Bot could not be started. Ensure you are on the game page.';
+                    return;
+                }
+                if (response && response.status) {
+                    document.getElementById('message').innerText = response.status;
+                }
+            });
         });
+
+        // Start updating the status
+        if (statusInterval) clearInterval(statusInterval);
+        statusInterval = setInterval(updateStatus, 1000); // Update every second
     });
 });
 
-// Stop Bot Button
+// Function to handle stop button click
 document.getElementById('stopBot').addEventListener('click', () => {
-    chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-        chrome.tabs.sendMessage(tabs[0].id, {action: "stopBot"}, (response) => {
-            updatePopup(response.status, betCount, "0s");
-            if (timerInterval) clearInterval(timerInterval);
-            timerInterval = null;
-            startTime = null;
+    // Send stopBot message to content script
+    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs.length === 0) return;
+        chrome.tabs.sendMessage(tabs[0].id, { action: "stopBot" }, (response) => {
+            if (chrome.runtime.lastError) {
+                document.getElementById('message').innerText = 'Bot could not be stopped. Ensure you are on the game page.';
+                return;
+            }
+            if (response && response.status) {
+                document.getElementById('message').innerText = response.status;
+            }
         });
     });
+
+    // Clear status interval
+    if (statusInterval) {
+        clearInterval(statusInterval);
+        statusInterval = null;
+    }
+
+    // Reset status display
+    document.getElementById('botStatus').innerText = 'Stopped';
+    document.getElementById('betsMade').innerText = '0';
+    document.getElementById('runningTime').innerText = '00:00:00';
+    document.getElementById('message').innerText = '';
 });
