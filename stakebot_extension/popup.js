@@ -22,7 +22,7 @@ function updateStatus() {
                 document.getElementById('betsMade').innerText = '0';
                 document.getElementById('profitTimes').innerText = '0';
                 document.getElementById('runningTime').innerText = '00:00:00';
-                document.getElementById('multipliersToCheck').innerText = '4'; // Default value
+                document.getElementById('currentMultipliersCount').innerText = '4'; // Default value
                 return;
             }
             if (response) {
@@ -30,7 +30,7 @@ function updateStatus() {
                 document.getElementById('betsMade').innerText = response.betsMade;
                 document.getElementById('profitTimes').innerText = response.profitTimes;
                 document.getElementById('runningTime').innerText = formatTime(response.runningTime);
-                document.getElementById('multipliersToCheck').innerText = response.multipliersCount ; // Display multipliersCount
+                document.getElementById('currentMultipliersCount').innerText = response.multipliersToCheck;
             }
         });
     });
@@ -41,20 +41,18 @@ document.getElementById('startBot').addEventListener('click', () => {
     const betSizeInput = parseFloat(document.getElementById('betSize').value);
     const multipliersCountInput = parseInt(document.getElementById('multipliersCount').value, 10);
 
-    // Validate Bet Size Input
     if (isNaN(betSizeInput) || betSizeInput < 0.01) {
-        displayMessage('Invalid bet size.', 'error');
+        displayMessage('Invalid bet size.', 'red');
         return;
     }
 
-    // Validate Multipliers Count Input
     if (isNaN(multipliersCountInput) || multipliersCountInput < 1 || multipliersCountInput > 5) {
-        displayMessage('Multipliers to check must be between 1 and 5.', 'error');
+        displayMessage('Multipliers to check must be between 1 and 5.', 'red');
         return;
     }
 
     // Clear any previous messages
-    clearMessage();
+    displayMessage('', 'green');
 
     // Save settings to Chrome storage
     chrome.storage.local.set({ betSize: betSizeInput, multipliersCount: multipliersCountInput }, () => {
@@ -63,16 +61,16 @@ document.getElementById('startBot').addEventListener('click', () => {
         // Send startBot message with settings to content script
         chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
             if (tabs.length === 0) {
-                displayMessage('No active tab found.', 'error');
+                displayMessage('No active tab found.', 'red');
                 return;
             }
             chrome.tabs.sendMessage(tabs[0].id, { action: "startBot", betSize: betSizeInput, multipliersCount: multipliersCountInput }, (response) => {
                 if (chrome.runtime.lastError) {
-                    displayMessage('Bot could not be started. Ensure you are on the game page.', 'error');
+                    displayMessage('Bot could not be started. Ensure you are on the game page.', 'red');
                     return;
                 }
                 if (response && response.status) {
-                    displayMessage(response.status, 'success');
+                    displayMessage(response.status, 'green');
                 }
             });
         });
@@ -89,16 +87,16 @@ document.getElementById('stopBot').addEventListener('click', () => {
     // Send stopBot message to content script
     chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
         if (tabs.length === 0) {
-            displayMessage('No active tab found.', 'error');
+            displayMessage('No active tab found.', 'red');
             return;
         }
         chrome.tabs.sendMessage(tabs[0].id, { action: "stopBot" }, (response) => {
             if (chrome.runtime.lastError) {
-                displayMessage('Bot could not be stopped. Ensure you are on the game page.', 'error');
+                displayMessage('Bot could not be stopped. Ensure you are on the game page.', 'red');
                 return;
             }
             if (response && response.status) {
-                displayMessage(response.status, 'success');
+                displayMessage(response.status, 'green');
             }
         });
     });
@@ -114,27 +112,15 @@ document.getElementById('stopBot').addEventListener('click', () => {
     document.getElementById('betsMade').innerText = '0';
     document.getElementById('profitTimes').innerText = '0';
     document.getElementById('runningTime').innerText = '00:00:00';
-    displayMessage('', ''); // Clear any messages
+    document.getElementById('currentMultipliersCount').innerText = '4'; // Reset to default
+    displayMessage('', 'green');
 });
 
-// Function to display messages with appropriate styling
-function displayMessage(message, type) {
+// Function to display messages
+function displayMessage(message, color) {
     const messageDiv = document.getElementById('message');
     messageDiv.innerText = message;
-    messageDiv.className = ''; // Reset classes
-
-    if (type === 'success') {
-        messageDiv.classList.add('success');
-    } else if (type === 'error') {
-        messageDiv.classList.add('error');
-    }
-}
-
-// Function to clear messages
-function clearMessage() {
-    const messageDiv = document.getElementById('message');
-    messageDiv.innerText = '';
-    messageDiv.className = '';
+    messageDiv.style.color = color;
 }
 
 // Update status when popup is opened

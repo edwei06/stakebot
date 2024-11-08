@@ -36,6 +36,16 @@ let networkInterval = null;
 let lastMultiplierChangeTime = Date.now();
 let isRunning = false;
 
+// Load stored profitTimes and startTime on script start
+chrome.storage.local.get(['profitTimes', 'startTime'], (result) => {
+    if (result.profitTimes !== undefined) {
+        profitTimes = result.profitTimes;
+    }
+    if (result.startTime && isRunning) {
+        startTime = result.startTime;
+    }
+});
+
 // ------------------- Helper Functions -------------------
 
 // Function to evaluate XPath and return the first matching element
@@ -157,16 +167,26 @@ function performAction() {
                 clickButton(ACTION_BUTTONS.s);
                 sPressCount += 1;
                 betsMade += 1;
-                console.log(`Pressed 'space' and 's'. Total 's' presses: ${sPressCount}, Bets Made: ${betsMade}`);
+                profitTimes += 1; // Increment profitTimes when sPressCount > 0
+
+                // Save updated profitTimes
+                chrome.storage.local.set({ profitTimes: profitTimes }, () => {
+                    console.log(`Profit Times updated to: ${profitTimes}`);
+                });
+
+                // Send notification for profit
+                sendNotification('Profit Achieved', `Total Profit Times: ${profitTimes}`);
+
+                console.log(`Pressed 'space' and 's'. Total 's' presses: ${sPressCount}, Bets Made: ${betsMade}, Profit Times: ${profitTimes}`);
                 updateStatus();
             } else {
                 if (sPressCount > 0) {
                     // Press 'a' sPressCount times
                     for (let i = 0; i < sPressCount; i++) {
                         clickButton(ACTION_BUTTONS.a);
+                        betsMade += 1;
                     }
-                    profitTimes += 1; // Increment profitTimes when sPressCount > 0
-                    console.log(`Pressed 'a' ${sPressCount} time(s), Profit Times: ${profitTimes}`);
+                    console.log(`Pressed 'a' ${sPressCount} time(s). Bets Made: ${betsMade}`);
                     sPressCount = 0; // Reset the counter
                     updateStatus();
                 }
@@ -204,6 +224,9 @@ function startBot(betSize, multipliersCount) {
         multipliersToCheck = multipliersCount;
         isRunning = true;
         startTime = Date.now();
+        chrome.storage.local.set({ startTime: startTime }, () => {
+            console.log(`Start Time set to: ${startTime}`);
+        });
         betsMade = 0;
         profitTimes = 0; // Initialize profitTimes
         sPressCount = 0;
@@ -228,6 +251,11 @@ function stopBot() {
         networkInterval = null;
         isRunning = false;
         sPressCount = 0;
+
+        // Remove startTime from storage
+        chrome.storage.local.remove(['startTime'], () => {
+            console.log('Start Time removed from storage.');
+        });
 
         console.log("Bot stopped.");
         sendNotification('Bot Stopped', 'The game bot has been deactivated.');
@@ -277,7 +305,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             betsMade: betsMade,
             profitTimes: profitTimes,
             runningTime: getRunningTime(),
-            multipliersToCheck: multipliersCount
+            multipliersToCheck: multipliersToCheck
         });
     }
 });
