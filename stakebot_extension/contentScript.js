@@ -157,17 +157,16 @@ function performAction() {
                 clickButton(ACTION_BUTTONS.s);
                 sPressCount += 1;
                 betsMade += 1;
-                profitTimes += 1; // Increment profitTimes when sPressCount > 0
-                console.log(`Pressed 'space' and 's'. Total 's' presses: ${sPressCount}, Bets Made: ${betsMade}, Profit Times: ${profitTimes}`);
+                console.log(`Pressed 'space' and 's'. Total 's' presses: ${sPressCount}, Bets Made: ${betsMade}`);
                 updateStatus();
             } else {
                 if (sPressCount > 0) {
                     // Press 'a' sPressCount times
                     for (let i = 0; i < sPressCount; i++) {
                         clickButton(ACTION_BUTTONS.a);
-                        betsMade += 1;
                     }
-                    console.log(`Pressed 'a' ${sPressCount} time(s). Bets Made: ${betsMade}`);
+                    profitTimes += 1; // Increment profitTimes when sPressCount > 0
+                    console.log(`Pressed 'a' ${sPressCount} time(s), Profit Times: ${profitTimes}`);
                     sPressCount = 0; // Reset the counter
                     updateStatus();
                 }
@@ -277,7 +276,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             isRunning: isRunning,
             betsMade: betsMade,
             profitTimes: profitTimes,
-            runningTime: getRunningTime()
+            runningTime: getRunningTime(),
+            multipliersToCheck: multipliersCount
         });
     }
 });
