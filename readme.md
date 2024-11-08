@@ -6,4 +6,5 @@
 2. click on 'load unpacked' and select the folder containing this code ![unpack extension](/readmeimg/unpack.png)
 3. open [stake](stake.com/casino/slide "游標顯示") in chrome ![slide](/readmeimg/silde.png)
 4. find the game bot extension at the top right of chrome and click it to open the pop up ![popup](/readmeimg/popup.png)
-5. click the start bot button to start the bot, and the popup should display **bot started**
+5. click the start bot button to start the bot, and the popup should display **bot started**  
+![started](/readmeimg/popup%20start%20bot.png)
