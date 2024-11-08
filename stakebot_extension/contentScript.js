@@ -166,9 +166,8 @@ function performAction() {
                     // Press 'a' sPressCount times
                     for (let i = 0; i < sPressCount; i++) {
                         clickButton(ACTION_BUTTONS.a);
-                        betsMade += 1;
                     }
-                    console.log(`Pressed 'a' ${sPressCount} time(s). Bets Made: ${betsMade}`);
+                    console.log(`Pressed 'a' ${sPressCount} time(s).`);
                     sPressCount = 0; // Reset the counter
                     updateStatus();
                 }
