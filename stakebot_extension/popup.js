@@ -71,6 +71,7 @@ document.getElementById('startBot').addEventListener('click', () => {
         // Start updating the status
         if (statusInterval) clearInterval(statusInterval);
         statusInterval = setInterval(updateStatus, 1000); // Update every second
+        updateStatus(); // Initial update
     });
 });
 
@@ -101,4 +102,9 @@ document.getElementById('stopBot').addEventListener('click', () => {
     document.getElementById('betsMade').innerText = '0';
     document.getElementById('runningTime').innerText = '00:00:00';
     document.getElementById('message').innerText = '';
+});
+
+// Update status when popup is opened
+document.addEventListener('DOMContentLoaded', () => {
+    updateStatus();
 });
