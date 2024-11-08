@@ -9,4 +9,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // Logic to start the bot can be implemented here if needed
         sendResponse({status: "Bot starting not implemented in background."});
     }
+    if (message.type === 'updateBadge') {
+        chrome.action.setBadgeText({ text: message.text });
+    }
 });
