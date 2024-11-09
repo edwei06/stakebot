@@ -1,7 +1,5 @@
 // popup.js
 
-let statusInterval = null;
-
 // Function to format time in HH:MM:SS
 function formatTime(milliseconds) {
     const totalSeconds = Math.floor(milliseconds / 1000);
@@ -9,6 +7,13 @@ function formatTime(milliseconds) {
     const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, '0');
     const seconds = String(totalSeconds % 60).padStart(2, '0');
     return `${hours}:${minutes}:${seconds}`;
+}
+
+// Function to display messages
+function displayMessage(message, color) {
+    const messageDiv = document.getElementById('message');
+    messageDiv.innerText = message;
+    messageDiv.style.color = color;
 }
 
 // Function to update status display
@@ -116,14 +121,24 @@ document.getElementById('stopBot').addEventListener('click', () => {
     displayMessage('', 'green');
 });
 
-// Function to display messages
-function displayMessage(message, color) {
-    const messageDiv = document.getElementById('message');
-    messageDiv.innerText = message;
-    messageDiv.style.color = color;
+// Function to load saved settings on popup load
+function loadSettings() {
+    chrome.storage.local.get(['betSize', 'multipliersCount'], (result) => {
+        if (result.betSize !== undefined) {
+            document.getElementById('betSize').value = result.betSize;
+        }
+        if (result.multipliersCount !== undefined) {
+            document.getElementById('multipliersCount').value = result.multipliersCount;
+            document.getElementById('currentMultipliersCount').innerText = result.multipliersCount;
+        }
+    });
 }
 
 // Update status when popup is opened
 document.addEventListener('DOMContentLoaded', () => {
+    loadSettings();
     updateStatus();
 });
+
+// Initialize status interval variable
+let statusInterval = null;

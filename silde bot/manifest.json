@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "stake bot",
+  "name": "silde bot",
   "version": "1.3",
   "description": "Automates actions based on game multipliers and countdown.",
   "permissions": [

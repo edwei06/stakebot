@@ -66,15 +66,15 @@ function startAutoBet(settings) {
 
         // Check if profit exceeds threshold
         if (profit > settings.profitThreshold) {
-            stopAutoBet();
             console.log(`Profit of ${profit} exceeds threshold of ${settings.profitThreshold}. Stopping script.`);
+            stopAutoBet("profit_threshold_reached");
             return;
         }
 
         // Check if balance is less than bet size
         if (balance < betSize) {
-            stopAutoBet();
             console.log(`Balance of ${balance} is less than bet size of ${betSize}. Stopping script.`);
+            stopAutoBet("balance_insufficient");
             return;
         }
 
@@ -86,7 +86,7 @@ function startAutoBet(settings) {
 }
 
 // Function to stop the auto-bet script
-function stopAutoBet() {
+function stopAutoBet(reason = "manual_stop") {
     if (intervalId) {
         clearInterval(intervalId);
         intervalId = null;
@@ -99,6 +99,15 @@ function stopAutoBet() {
         startButton.click();
         console.log("Clicked 'Stop Autobet' button to halt auto-betting on the webpage.");
     }
+
+    // Inform the background script to update status
+    chrome.runtime.sendMessage({ action: "stop", reason: reason }, (response) => {
+        if (chrome.runtime.lastError) {
+            console.error("Error sending stop message to background:", chrome.runtime.lastError.message);
+        } else {
+            console.log("Background script acknowledged stop action:", response.status);
+        }
+    });
 }
 
 // Listen for messages from the popup
@@ -107,14 +116,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         getSettings((settings) => {
             startAutoBet(settings);
             // Inform the background script to update status
-            chrome.runtime.sendMessage({ action: "start" });
+            chrome.runtime.sendMessage({ action: "start" }, (response) => {
+                if (chrome.runtime.lastError) {
+                    console.error("Error sending start message to background:", chrome.runtime.lastError.message);
+                } else {
+                    console.log("Background script acknowledged start action:", response.status);
+                }
+            });
             sendResponse({ status: "started" });
         });
         return true; // Keep the message channel open for sendResponse
     } else if (request.action === "stop") {
-        stopAutoBet();
-        // Inform the background script to update status
-        chrome.runtime.sendMessage({ action: "stop" });
+        stopAutoBet("manual_stop");
         sendResponse({ status: "stopped" });
         return true; // Keep the message channel open for sendResponse
     }

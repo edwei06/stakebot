@@ -167,6 +167,7 @@ function performAction() {
                 clickButton(ACTION_BUTTONS.s);
                 sPressCount += 1;
                 betsMade += 1;
+                profitTimes += 1; // Increment profitTimes when sPressCount > 0
 
                 // Save updated profitTimes
                 chrome.storage.local.set({ profitTimes: profitTimes }, () => {
@@ -183,8 +184,8 @@ function performAction() {
                     // Press 'a' sPressCount times
                     for (let i = 0; i < sPressCount; i++) {
                         clickButton(ACTION_BUTTONS.a);
+                        betsMade += 1;
                     }
-                    profitTimes += 1;
                     console.log(`Pressed 'a' ${sPressCount} time(s). Bets Made: ${betsMade}`);
                     sPressCount = 0; // Reset the counter
                     updateStatus();

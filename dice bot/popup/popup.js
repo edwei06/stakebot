@@ -43,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             chrome.tabs.sendMessage(tabs[0].id, { action: "start" }, (response) => {
                 if (chrome.runtime.lastError) {
-                    console.error(chrome.runtime.lastError.message);
+                    console.error("Error starting script:", chrome.runtime.lastError.message);
                     statusText.textContent = "Error starting script.";
                     statusText.style.color = "#ff0000";
                 } else {
@@ -73,7 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             chrome.tabs.sendMessage(tabs[0].id, { action: "stop" }, (response) => {
                 if (chrome.runtime.lastError) {
-                    console.error(chrome.runtime.lastError.message);
+                    console.error("Error stopping script:", chrome.runtime.lastError.message);
                     statusText.textContent = "Error stopping script.";
                     statusText.style.color = "#ff0000";
                 } else {
@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateStatus() {
         chrome.runtime.sendMessage({ action: "getStatus" }, (response) => {
             if (chrome.runtime.lastError) {
-                console.error(chrome.runtime.lastError.message);
+                console.error("Error retrieving status:", chrome.runtime.lastError.message);
                 statusText.textContent = "Error retrieving status.";
                 statusText.style.color = "#ff0000";
                 return;

@@ -15,16 +15,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (!isRunning) {
             isRunning = true;
             startTime = Date.now();
-            chrome.storage.local.set({ isRunning: true, startTime: startTime });
+            chrome.storage.local.set({ isRunning: true, startTime: startTime }, () => {
+                console.log("Background: Script started.");
+            });
 
             // Start running time updater
             intervalId = setInterval(() => {
+                if (!isRunning || !startTime) return;
                 const elapsed = Date.now() - startTime;
                 const hours = String(Math.floor(elapsed / 3600000)).padStart(2, '0');
                 const minutes = String(Math.floor((elapsed % 3600000) / 60000)).padStart(2, '0');
                 const seconds = String(Math.floor((elapsed % 60000) / 1000)).padStart(2, '0');
                 const runningTime = `${hours}:${minutes}:${seconds}`;
-                chrome.storage.local.set({ runningTime: runningTime });
+                chrome.storage.local.set({ runningTime: runningTime }, () => {
+                    // Optional: Log running time updates
+                });
             }, 1000);
 
             sendResponse({ status: "started" });
@@ -35,11 +40,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         if (isRunning) {
             isRunning = false;
             startTime = null;
-            chrome.storage.local.set({ isRunning: false, startTime: null, runningTime: "00:00:00" });
+            chrome.storage.local.set({ isRunning: false, startTime: null, runningTime: "00:00:00" }, () => {
+                console.log(`Background: Script stopped. Reason: ${request.reason}`);
+            });
 
             // Stop running time updater
-            clearInterval(intervalId);
-            intervalId = null;
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
 
             sendResponse({ status: "stopped" });
         } else {
