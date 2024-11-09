@@ -34,8 +34,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Start AutoBet
     startBtn.addEventListener('click', () => {
-        chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-            chrome.tabs.sendMessage(tabs[0].id, {action: "start"}, (response) => {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs.length === 0) {
+                statusText.textContent = "No active tab.";
+                statusText.style.color = "#ff0000";
+                return;
+            }
+
+            chrome.tabs.sendMessage(tabs[0].id, { action: "start" }, (response) => {
                 if (chrome.runtime.lastError) {
                     console.error(chrome.runtime.lastError.message);
                     statusText.textContent = "Error starting script.";
@@ -58,8 +64,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Stop AutoBet
     stopBtn.addEventListener('click', () => {
-        chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-            chrome.tabs.sendMessage(tabs[0].id, {action: "stop"}, (response) => {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            if (tabs.length === 0) {
+                statusText.textContent = "No active tab.";
+                statusText.style.color = "#ff0000";
+                return;
+            }
+
+            chrome.tabs.sendMessage(tabs[0].id, { action: "stop" }, (response) => {
                 if (chrome.runtime.lastError) {
                     console.error(chrome.runtime.lastError.message);
                     statusText.textContent = "Error stopping script.";
@@ -83,6 +95,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // Function to update status from background
     function updateStatus() {
         chrome.runtime.sendMessage({ action: "getStatus" }, (response) => {
+            if (chrome.runtime.lastError) {
+                console.error(chrome.runtime.lastError.message);
+                statusText.textContent = "Error retrieving status.";
+                statusText.style.color = "#ff0000";
+                return;
+            }
+
             if (response) {
                 if (response.isRunning) {
                     statusText.textContent = "Running";

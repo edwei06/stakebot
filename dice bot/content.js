@@ -29,6 +29,17 @@ function setBetSize(betSize) {
     }
 }
 
+// Function to click the menu button
+function clickMenuButton() {
+    const menuButton = getElementByXPath('//*[@id="main-content"]/div/div[2]/div[1]/div[3]/button');
+    if (menuButton) {
+        menuButton.click();
+        console.log("Clicked the menu button.");
+    } else {
+        console.log("Menu button not found.");
+    }
+}
+
 // Function to start the auto-bet script
 function startAutoBet(settings) {
     if (intervalId) return; // Prevent multiple intervals
@@ -66,6 +77,11 @@ function startAutoBet(settings) {
             console.log(`Balance of ${balance} is less than bet size of ${betSize}. Stopping script.`);
             return;
         }
+
+        // If profit label not found, click the menu button
+        if (!profitLabel) {
+            clickMenuButton();
+        }
     }, 1000); // Adjust the interval as needed (e.g., every 1 second)
 }
 
@@ -87,10 +103,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             chrome.runtime.sendMessage({ action: "start" });
             sendResponse({ status: "started" });
         });
+        return true; // Keep the message channel open for sendResponse
     } else if (request.action === "stop") {
         stopAutoBet();
         // Inform the background script to update status
         chrome.runtime.sendMessage({ action: "stop" });
         sendResponse({ status: "stopped" });
+        return true; // Keep the message channel open for sendResponse
     }
 });
