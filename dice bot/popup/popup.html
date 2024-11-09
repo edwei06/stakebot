@@ -1,0 +1,31 @@
+<!-- popup/popup.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AutoBet Controller</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <h1>AutoBet Settings</h1>
+        <div class="field">
+            <label for="profitThreshold">Profit Threshold:</label>
+            <input type="number" id="profitThreshold" step="0.01" min="0">
+        </div>
+        <div class="field">
+            <label for="betSize">Bet Size:</label>
+            <input type="number" id="betSize" step="0.0001" min="0">
+        </div>
+        <div class="buttons">
+            <button id="startBtn">Start AutoBet</button>
+            <button id="stopBtn">Stop AutoBet</button>
+        </div>
+        <div id="status">
+            <p>Status: <span id="statusText">Stopped</span></p>
+            <p>Running Time: <span id="runningTime">00:00:00</span></p>
+        </div>
+    </div>
+    <script src="popup.js"></script>
+</body>
+</html>
