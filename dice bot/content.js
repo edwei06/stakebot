@@ -54,7 +54,7 @@ function startAutoBet(settings) {
         const betSizeLabel = getElementByXPath('//*[@id="main-content"]/div/div[1]/div[1]/label[1]/span/div[2]');
 
         // Click 'Start Autobet' button if labeled correctly
-        if (startButton && startButton.innerText === "Start Autobet") {
+        if (startButton && startButton.innerText.trim() === "Start Autobet") {
             startButton.click();
             console.log("Clicked 'Start Autobet' button.");
         }
@@ -91,6 +91,13 @@ function stopAutoBet() {
         clearInterval(intervalId);
         intervalId = null;
         console.log("Auto-bet script stopped.");
+    }
+
+    // Additionally, check if the start button shows "Stop Autobet" and click it
+    const startButton = getElementByXPath('//*[@id="main-content"]/div/div[1]/div[1]/button');
+    if (startButton && startButton.innerText.trim() === "Stop Autobet") {
+        startButton.click();
+        console.log("Clicked 'Stop Autobet' button to halt auto-betting on the webpage.");
     }
 }
 
