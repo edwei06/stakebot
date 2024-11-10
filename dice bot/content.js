@@ -1,9 +1,26 @@
 // content.js
 
-// Function to get element by XPath
-function getElementByXPath(xpath) {
-    const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-    return result.singleNodeValue;
+// Function to get element by multiple XPaths
+function getElementByMultipleXPaths(xpaths) {
+    for (let xpath of xpaths) {
+        const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+        if (result.singleNodeValue) {
+            return result.singleNodeValue;
+        }
+    }
+    return null;
+}
+
+// Function to find the profit label dynamically
+function findProfitLabel() {
+    const spans = document.querySelectorAll('#svelte span');
+    for (let span of spans) {
+        const parentText = span.parentElement ? span.parentElement.innerText : '';
+        if (parentText.includes('Profit')) {
+            return span;
+        }
+    }
+    return null;
 }
 
 // Function to retrieve settings from chrome.storage
@@ -18,7 +35,10 @@ let intervalId = null;
 
 // Function to set bet size
 function setBetSize(betSize) {
-    const betSizeInput = getElementByXPath('//*[@id="main-content"]/div/div[1]/div[1]/label[1]/div/div[1]/input');
+    const betSizeInput = getElementByMultipleXPaths([
+        '//*[@id="main-content"]/div/div[1]/div[1]/label[1]/div/div[1]/input',
+        '//*[@id="main-content"]/div/div[2]/div[1]/label[1]/div/div[1]/input' // Add more XPaths as needed
+    ]);
     if (betSizeInput) {
         betSizeInput.value = betSize;
         // Trigger input event if necessary
@@ -31,7 +51,10 @@ function setBetSize(betSize) {
 
 // Function to click the menu button
 function clickMenuButton() {
-    const menuButton = getElementByXPath('//*[@id="main-content"]/div/div[2]/div[1]/div[3]/button');
+    const menuButton = getElementByMultipleXPaths([
+        '//*[@id="main-content"]/div/div[2]/div[1]/div[3]/button',
+        '//*[@id="main-content"]/div/div[3]/div[1]/div[3]/button' // Add more XPaths as needed
+    ]);
     if (menuButton) {
         menuButton.click();
         console.log("Clicked the menu button.");
@@ -48,10 +71,26 @@ function startAutoBet(settings) {
     setBetSize(settings.betSize);
 
     intervalId = setInterval(() => {
-        const startButton = getElementByXPath('//*[@id="main-content"]/div/div[1]/div[1]/button');
-        const profitLabel = getElementByXPath('//*[@id="svelte"]/div[3]/div[2]/div/div[2]/div[1]/div[1]/div/span[1]/span');
-        const balanceLabel = getElementByXPath('//*[@id="svelte"]/div[2]/div[3]/div[3]/div/div/div/div[2]/div/div/div/button/div/div/span[1]/span');
-        const betSizeLabel = getElementByXPath('//*[@id="main-content"]/div/div[1]/div[1]/label[1]/span/div[2]');
+        const startButton = getElementByMultipleXPaths([
+            '//*[@id="main-content"]/div/div[1]/div[1]/button',
+            '//*[@id="main-content"]/div/div[2]/div[1]/button' // Add more XPaths as needed
+        ]);
+
+        // Attempt to find the profit label using both XPath and dynamic methods
+        let profitLabel = getElementByMultipleXPaths([
+            '//*[@id="svelte"]/div[3]/div[2]/div/div[2]/div[1]/div[1]/div/span[1]/span',
+            '//*[@id="svelte"]/div[4]/div[2]/div/div[2]/div[1]/div[1]/div/span[1]/span'
+        ]) || findProfitLabel();
+
+        const balanceLabel = getElementByMultipleXPaths([
+            '//*[@id="svelte"]/div[2]/div[3]/div[3]/div/div/div/div[2]/div/div/div/button/div/div/span[1]/span',
+            '//*[@id="svelte"]/div[3]/div[3]/div[3]/div/div/div/div[2]/div/div/div/button/div/div/span[1]/span'
+        ]);
+
+        const betSizeLabel = getElementByMultipleXPaths([
+            '//*[@id="main-content"]/div/div[1]/div[1]/label[1]/span/div[2]',
+            '//*[@id="main-content"]/div/div[2]/div[1]/label[1]/span/div[2]'
+        ]);
 
         // Click 'Start Autobet' button if labeled correctly
         if (startButton && startButton.innerText.trim() === "Start Autobet") {
@@ -94,7 +133,10 @@ function stopAutoBet(reason = "manual_stop") {
     }
 
     // Additionally, check if the start button shows "Stop Autobet" and click it
-    const startButton = getElementByXPath('//*[@id="main-content"]/div/div[1]/div[1]/button');
+    const startButton = getElementByMultipleXPaths([
+        '//*[@id="main-content"]/div/div[1]/div[1]/button',
+        '//*[@id="main-content"]/div/div[2]/div[1]/button' // Add more XPaths as needed
+    ]);
     if (startButton && startButton.innerText.trim() === "Stop Autobet") {
         startButton.click();
         console.log("Clicked 'Stop Autobet' button to halt auto-betting on the webpage.");
