@@ -27,7 +27,8 @@ function findProfitLabel() {
 function getSettings(callback) {
     chrome.storage.sync.get({
         profitThreshold: 1,
-        betSize: 0.0001
+        betSize: 0.0001,
+        autoClickInstantBet: false
     }, callback);
 }
 
@@ -49,7 +50,54 @@ function setBetSize(betSize) {
     }
 }
 
-// Function to click the menu button
+// Function to click the menu button to open bet settings
+function openBetSettingsMenu() {
+    const menuButton = getElementByMultipleXPaths([
+        '//*[@id="main-content"]/div/div[2]/div[1]/div[1]/div[1]/button',
+        '//*[@id="main-content"]/div/div[3]/div[1]/div[1]/div[1]/button' // Add more XPaths if necessary
+    ]);
+    if (menuButton) {
+        menuButton.click();
+        console.log("Clicked 'Bet Settings' menu button.");
+    } else {
+        console.log("Bet Settings menu button not found.");
+    }
+}
+
+function clickMybets() {
+    const mybets = getElementByMultipleXPaths([
+        '//*[@id="main-content"]/div[2]/div[2]/div/div/div/div[1]/div/div[1]/div/div/button[1]',
+        '//*[@id="main-content"]/div[2]/div[2]/div/div/div/div[1]/div/div[1]/div/div/button[1]' // Add more XPaths if necessary
+    ]);
+    if (mybets) {
+        mybets.click();
+        console.log("Clicked 'Bet Settings' menu button.");
+    } else {
+        console.log("Bet Settings menu button not found.");
+    }
+}
+// Function to click the "Instant Bet" button if it's not already active
+function clickInstantBetButton() {
+    const instantBetButton = getElementByMultipleXPaths([
+        '/html/body/div[5]/div/div/div[2]/div/button[1]',
+        '/html/body/div[5]/div/div/div[2]/div/button[1]' // Friend's XPath
+    ]);
+    if (instantBetButton) {
+        // Check if the button is already active by inspecting its class list
+        const isActive = instantBetButton.classList.contains('!text-blue-500');
+        
+        if (!isActive) {
+            instantBetButton.click();
+            console.log("Clicked 'Instant Bet' button to activate.");
+        } else {
+            console.log("'Instant Bet' button is already active. No action taken.");
+        }
+    } else {
+        console.log("Instant Bet button not found.");
+    }
+}
+
+// Function to click the main menu button (for other functionalities)
 function clickMenuButton() {
     const menuButton = getElementByMultipleXPaths([
         '//*[@id="main-content"]/div/div[2]/div[1]/div[3]/button',
@@ -57,9 +105,9 @@ function clickMenuButton() {
     ]);
     if (menuButton) {
         menuButton.click();
-        console.log("Clicked the menu button.");
+        console.log("Clicked the main menu button.");
     } else {
-        console.log("Menu button not found.");
+        console.log("Main menu button not found.");
     }
 }
 
@@ -69,6 +117,15 @@ function startAutoBet(settings) {
 
     // Set the bet size once when starting
     setBetSize(settings.betSize);
+    clickMybets();
+    // If autoClickInstantBet is enabled, perform the clicking actions
+    if (settings.autoClickInstantBet) {
+        openBetSettingsMenu();
+        // Optionally, add a short delay to ensure the menu is open before clicking the button
+        setTimeout(() => {
+            clickInstantBetButton();
+        }, 500); // 500ms delay; adjust as necessary
+    }
 
     intervalId = setInterval(() => {
         const startButton = getElementByMultipleXPaths([
@@ -117,7 +174,7 @@ function startAutoBet(settings) {
             return;
         }
 
-        // If profit label not found, click the menu button
+        // If profit label not found, click the main menu button
         if (!profitLabel) {
             clickMenuButton();
         }

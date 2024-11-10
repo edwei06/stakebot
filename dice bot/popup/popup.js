@@ -3,6 +3,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const profitInput = document.getElementById('profitThreshold');
     const betSizeInput = document.getElementById('betSize');
+    const autoClickCheckbox = document.getElementById('autoClickInstantBet');
     const startBtn = document.getElementById('startBtn');
     const stopBtn = document.getElementById('stopBtn');
     const statusText = document.getElementById('statusText');
@@ -11,19 +12,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load saved settings
     chrome.storage.sync.get({
         profitThreshold: 1,
-        betSize: 0.0001
+        betSize: 0.0001,
+        autoClickInstantBet: false
     }, (items) => {
         profitInput.value = items.profitThreshold;
         betSizeInput.value = items.betSize;
+        autoClickCheckbox.checked = items.autoClickInstantBet;
     });
 
     // Save settings on input change
     function saveSettings() {
         const profit = parseFloat(profitInput.value) || 1;
         const betSize = parseFloat(betSizeInput.value) || 0.0001;
+        const autoClick = autoClickCheckbox.checked;
         chrome.storage.sync.set({
             profitThreshold: profit,
-            betSize: betSize
+            betSize: betSize,
+            autoClickInstantBet: autoClick
         }, () => {
             console.log('Settings saved');
         });
@@ -31,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     profitInput.addEventListener('change', saveSettings);
     betSizeInput.addEventListener('change', saveSettings);
+    autoClickCheckbox.addEventListener('change', saveSettings);
 
     // Start AutoBet
     startBtn.addEventListener('click', () => {
@@ -50,6 +56,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (response.status === "started") {
                         statusText.textContent = "Running";
                         statusText.style.color = "#00ff00";
+                        // Disable inputs while running
+                        startBtn.disabled = true;
+                        stopBtn.disabled = false;
+                        profitInput.disabled = true;
+                        betSizeInput.disabled = true;
+                        autoClickCheckbox.disabled = true;
                     } else if (response.status === "already_running") {
                         statusText.textContent = "Already Running";
                         statusText.style.color = "#ffff00";
@@ -80,6 +92,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (response.status === "stopped") {
                         statusText.textContent = "Stopped";
                         statusText.style.color = "#ff0000";
+                        // Enable inputs after stopping
+                        startBtn.disabled = false;
+                        stopBtn.disabled = true;
+                        profitInput.disabled = false;
+                        betSizeInput.disabled = false;
+                        autoClickCheckbox.disabled = false;
                     } else if (response.status === "not_running") {
                         statusText.textContent = "Not Running";
                         statusText.style.color = "#ffff00";
@@ -106,9 +124,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (response.isRunning) {
                     statusText.textContent = "Running";
                     statusText.style.color = "#00ff00";
+                    // Disable inputs while running
+                    startBtn.disabled = true;
+                    stopBtn.disabled = false;
+                    profitInput.disabled = true;
+                    betSizeInput.disabled = true;
+                    autoClickCheckbox.disabled = true;
                 } else {
                     statusText.textContent = "Stopped";
                     statusText.style.color = "#ff0000";
+                    // Enable inputs after stopping
+                    startBtn.disabled = false;
+                    stopBtn.disabled = true;
+                    profitInput.disabled = false;
+                    betSizeInput.disabled = false;
+                    autoClickCheckbox.disabled = false;
                 }
                 runningTime.textContent = response.runningTime || "00:00:00";
             }
