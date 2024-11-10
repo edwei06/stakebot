@@ -167,8 +167,8 @@ function startAutoBet(settings) {
             return;
         }
 
-        // Check if balance is less than bet size
-        if (balance < betSize) {
+        // Check if balance is less than profit
+        if (balance < (-profit)) {
             console.log(`Balance of ${balance} is less than bet size of ${betSize}. Stopping script.`);
             stopAutoBet("balance_insufficient");
             return;
