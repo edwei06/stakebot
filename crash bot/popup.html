@@ -1,0 +1,145 @@
+<!-- popup.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Game Bot Controls</title>
+    <style>
+        /* popup/popup.css */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #2c2c2c;
+            color: #f0f0f0;
+        }
+
+        .container {
+            padding: 20px;
+            width: 300px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ffcc00;
+        }
+
+        .field {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #ffffff;
+        }
+
+        input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            background-color: #444;
+            color: #f0f0f0;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            background-color: #ffcc00;
+            color: #2c2c2c;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            flex: 1;
+            margin: 0 5px;
+        }
+
+        button:first-child {
+            margin-left: 0;
+        }
+
+        button:last-child {
+            margin-right: 0;
+        }
+
+        button:hover {
+            background-color: #e6b800;
+        }
+
+        #status {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.9em;
+            background-color: #3c3c3c;
+            padding: 10px;
+            border-radius: 4px;
+        }
+
+        #status p {
+            margin: 5px 0;
+        }
+
+        #status span {
+            color: #00ff00;
+        }
+
+        #message {
+            margin-top: 15px;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #444;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #888;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Game Bot</h1>
+        
+        <div class="field">
+            <label for="betSize">Bet Size:</label>
+            <input type="number" id="betSize" step="0.01" min="0.01" value="0.01">
+        </div>
+        
+        <div class="field">
+            <label for="multipliersCount">Multipliers to Check:</label>
+            <input type="number" id="multipliersCount" step="1" min="1" max="5" value="4">
+        </div>
+        
+        <div class="buttons">
+            <button id="startBot">Start Bot</button>
+            <button id="stopBot">Stop Bot</button>
+        </div>
+        
+        <div id="status">
+            <p><strong>Status:</strong> <span id="botStatus">Stopped</span></p>
+            <p><strong>Bets Made:</strong> <span id="betsMade">0</span></p>
+            <p><strong>Profit Times:</strong> <span id="profitTimes">0</span></p>
+            <p><strong>Running Time:</strong> <span id="runningTime">00:00:00</span></p>
+            <p><strong>Multipliers to Check:</strong> <span id="currentMultipliersCount">4</span></p>
+        </div>
+        
+        <div id="message"></div>
+    </div>
+    
+    <script src="popup.js"></script>
+</body>
+</html>
