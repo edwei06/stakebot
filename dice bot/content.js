@@ -51,6 +51,19 @@ function setBetSize(betSize) {
     }
 }
 
+// NEW: Function to click the specified initial button
+function clickInitialButton() {
+    const initialButton = getElementByMultipleXPaths([
+        '//*[@id="main-content"]/div/div[1]/div[1]/div[1]/div/div/button[3]'
+    ]);
+    if (initialButton) {
+        initialButton.click();
+        console.log("Clicked the initial button at the start of the script.");
+    } else {
+        console.log("Initial button not found.");
+    }
+}
+
 // Function to click the menu button to open bet settings
 function openBetSettingsMenu() {
     const menuButton = getElementByMultipleXPaths([
@@ -67,24 +80,18 @@ function openBetSettingsMenu() {
 
 // Function to click the "Instant Bet" button if it's not already active
 function clickInstantBetButton() {
-    const instantBetButton = getElementByMultipleXPaths([
-        '//*[@id="main-content"]/div[2]/div[2]/div/div/div/div[1]/div/div[1]/div/div/button[1]',
-        '//*[@id="main-content"]/div[3]/div[2]/div/div/div/div[1]/div/div[1]/div/div/button[1]' // Friend's XPath
-    ]);
-    if (instantBetButton) {
-        // Check if the button is already active by inspecting its class list
-        const isActive = instantBetButton.classList.contains('!text-blue-500');
-        
-        if (!isActive) {
-            instantBetButton.click();
-            console.log("Clicked 'Instant Bet' button to activate.");
-        } else {
-            console.log("'Instant Bet' button is already active. No action taken.");
+    const buttons = document.querySelectorAll('button');
+    for (const button of buttons) {
+        // Trim whitespace and compare text
+        if (button.innerText.trim() === "Instant Bet") {
+            button.click();
+            console.log("Clicked 'Instant Bet' button.");
+            return;
         }
-    } else {
-        console.log("Instant Bet button not found.");
     }
+    console.log("Instant Bet button not found.");
 }
+
 
 // Function to click the main menu button (for other functionalities)
 function clickMenuButton() {
@@ -103,7 +110,8 @@ function clickMenuButton() {
 // Function to start the auto-bet script
 function startAutoBet(settings) {
     if (intervalId) return; // Prevent multiple intervals
-
+    
+    clickInitialButton();
     // Set the bet size once when starting
     setBetSize(settings.betSize);
 
