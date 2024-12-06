@@ -51,11 +51,31 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
 
             sendResponse({ status: "stopped" });
+
+            // Handle notifications if a notification message is received
+            if (request.reason.includes("reached")) {
+                chrome.notifications.create({
+                    type: 'basic',
+                    iconUrl: 'icons/icon.png',
+                    title: 'AutoBet Stopped',
+                    message: `AutoBet has been stopped: ${request.reason.replace(/_/g, ' ')}`,
+                    priority: 2
+                });
+            }
         } else {
             sendResponse({ status: "not_running" });
         }
     } else if (request.action === "getStatus") {
         sendResponse({ isRunning: isRunning, runningTime: formatRunningTime() });
+    } else if (request.action === "notify") {
+        // Optional: Handle additional notifications
+        chrome.notifications.create({
+            type: 'basic',
+            iconUrl: 'icons/icon.png',
+            title: 'AutoBet Notification',
+            message: request.message,
+            priority: 2
+        });
     }
     return true; // Keep the message channel open for sendResponse
 });

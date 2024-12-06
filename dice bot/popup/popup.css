@@ -77,3 +77,20 @@ button:hover {
 #status span {
     color: #00ff00;
 }
+/* popup/popup.css */
+.field {
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    color: #ffffff;
+}
+
+input[type="number"] {
+    width: 100%;
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+}

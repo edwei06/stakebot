@@ -27,6 +27,7 @@ function findProfitLabel() {
 function getSettings(callback) {
     chrome.storage.sync.get({
         profitThreshold: 1,
+        minProfitThreshold: 0, // Default minimum profit
         betSize: 0.0001,
         autoClickInstantBet: false
     }, callback);
@@ -64,23 +65,11 @@ function openBetSettingsMenu() {
     }
 }
 
-function clickMybets() {
-    const mybets = getElementByMultipleXPaths([
-        '//*[@id="main-content"]/div[2]/div[2]/div/div/div/div[1]/div/div[1]/div/div/button[1]',
-        '//*[@id="main-content"]/div[2]/div[2]/div/div/div/div[1]/div/div[1]/div/div/button[1]' // Add more XPaths if necessary
-    ]);
-    if (mybets) {
-        mybets.click();
-        console.log("Clicked 'Bet Settings' menu button.");
-    } else {
-        console.log("Bet Settings menu button not found.");
-    }
-}
 // Function to click the "Instant Bet" button if it's not already active
 function clickInstantBetButton() {
     const instantBetButton = getElementByMultipleXPaths([
-        '/html/body/div[5]/div/div/div[2]/div/button[1]',
-        '/html/body/div[5]/div/div/div[2]/div/button[1]' // Friend's XPath
+        '//*[@id="main-content"]/div[2]/div[2]/div/div/div/div[1]/div/div[1]/div/div/button[1]',
+        '//*[@id="main-content"]/div[3]/div[2]/div/div/div/div[1]/div/div[1]/div/div/button[1]' // Friend's XPath
     ]);
     if (instantBetButton) {
         // Check if the button is already active by inspecting its class list
@@ -117,7 +106,7 @@ function startAutoBet(settings) {
 
     // Set the bet size once when starting
     setBetSize(settings.betSize);
-    clickMybets();
+
     // If autoClickInstantBet is enabled, perform the clicking actions
     if (settings.autoClickInstantBet) {
         openBetSettingsMenu();
@@ -160,16 +149,23 @@ function startAutoBet(settings) {
         let balance = parseFloat(balanceLabel ? balanceLabel.innerText : '0');
         let betSize = parseFloat(betSizeLabel ? betSizeLabel.innerText : '0');
 
-        // Check if profit exceeds threshold
+        // Check if profit exceeds maximum threshold
         if (profit > settings.profitThreshold) {
             console.log(`Profit of ${profit} exceeds threshold of ${settings.profitThreshold}. Stopping script.`);
             stopAutoBet("profit_threshold_reached");
             return;
         }
 
-        // Check if balance is less than profit
-        if (balance < (-profit)) {
-            console.log(`Balance of ${balance} is less than bet size of ${(-profit)}. Stopping script.`);
+        // Check if profit is below minimum threshold
+        if (profit < settings.minProfitThreshold) {
+            console.log(`Profit of ${profit} is below minimum threshold of ${settings.minProfitThreshold}. Stopping script.`);
+            stopAutoBet("min_profit_threshold_reached");
+            return;
+        }
+
+        // Check if balance is less than bet size
+        if (balance < betSize) {
+            console.log(`Balance of ${balance} is less than bet size of ${betSize}. Stopping script.`);
             stopAutoBet("balance_insufficient");
             return;
         }
@@ -207,6 +203,9 @@ function stopAutoBet(reason = "manual_stop") {
             console.log("Background script acknowledged stop action:", response.status);
         }
     });
+
+    // Optional: Notify the user via notifications (if implemented)
+    chrome.runtime.sendMessage({ action: "notify", message: `AutoBet stopped: ${reason.replace(/_/g, ' ')}` });
 }
 
 // Listen for messages from the popup

@@ -2,6 +2,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     const profitInput = document.getElementById('profitThreshold');
+    const minProfitInput = document.getElementById('minProfitThreshold');
     const betSizeInput = document.getElementById('betSize');
     const autoClickCheckbox = document.getElementById('autoClickInstantBet');
     const startBtn = document.getElementById('startBtn');
@@ -12,10 +13,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load saved settings
     chrome.storage.sync.get({
         profitThreshold: 1,
+        minProfitThreshold: 0,
         betSize: 0.0001,
         autoClickInstantBet: false
     }, (items) => {
         profitInput.value = items.profitThreshold;
+        minProfitInput.value = items.minProfitThreshold;
         betSizeInput.value = items.betSize;
         autoClickCheckbox.checked = items.autoClickInstantBet;
     });
@@ -23,10 +26,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // Save settings on input change
     function saveSettings() {
         const profit = parseFloat(profitInput.value) || 1;
+        const minProfit = parseFloat(minProfitInput.value) || 0;
         const betSize = parseFloat(betSizeInput.value) || 0.0001;
         const autoClick = autoClickCheckbox.checked;
         chrome.storage.sync.set({
             profitThreshold: profit,
+            minProfitThreshold: minProfit,
             betSize: betSize,
             autoClickInstantBet: autoClick
         }, () => {
@@ -35,6 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     profitInput.addEventListener('change', saveSettings);
+    minProfitInput.addEventListener('change', saveSettings);
     betSizeInput.addEventListener('change', saveSettings);
     autoClickCheckbox.addEventListener('change', saveSettings);
 
@@ -60,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         startBtn.disabled = true;
                         stopBtn.disabled = false;
                         profitInput.disabled = true;
+                        minProfitInput.disabled = true;
                         betSizeInput.disabled = true;
                         autoClickCheckbox.disabled = true;
                     } else if (response.status === "already_running") {
@@ -96,6 +103,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         startBtn.disabled = false;
                         stopBtn.disabled = true;
                         profitInput.disabled = false;
+                        minProfitInput.disabled = false;
                         betSizeInput.disabled = false;
                         autoClickCheckbox.disabled = false;
                     } else if (response.status === "not_running") {
@@ -128,6 +136,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     startBtn.disabled = true;
                     stopBtn.disabled = false;
                     profitInput.disabled = true;
+                    minProfitInput.disabled = true;
                     betSizeInput.disabled = true;
                     autoClickCheckbox.disabled = true;
                 } else {
@@ -137,6 +146,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     startBtn.disabled = false;
                     stopBtn.disabled = true;
                     profitInput.disabled = false;
+                    minProfitInput.disabled = false;
                     betSizeInput.disabled = false;
                     autoClickCheckbox.disabled = false;
                 }
