@@ -54,6 +54,7 @@ function setBetSize(betSize) {
 // NEW: Function to click the specified initial button
 function clickInitialButton() {
     const initialButton = getElementByMultipleXPaths([
+        '//*[@id="main-content"]/div/div[1]/div[1]/div[1]/div/div/button[3]',
         '//*[@id="main-content"]/div/div[1]/div[1]/div[1]/div/div/button[3]'
     ]);
     if (initialButton) {
